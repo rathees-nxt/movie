@@ -6,6 +6,7 @@ const app = express()
 app.use(express.json())
 const dbPath = path.join(__dirname, 'moviesData.db')
 let db = null
+
 const initializeDBAndServer = async () => {
   try {
     db = await open({
@@ -29,7 +30,13 @@ app.get('/movies/', async (request, response) => {
   ORDER BY 
     movie_id`
   const movieArray = await db.all(getMovieQuery)
-  response.send(movieArray)
+  const ans = dbObj => {
+    return {
+      movieName: dbObj.movie_name,
+    }
+  }
+  const newMovieArray = movieArray.map(eachMovie => ans(eachMovie))
+  response.send(newMovieArray)
 })
 
 //Add new movie in the movie table
@@ -38,7 +45,7 @@ app.post('/movies/', async (request, response) => {
   const {directorId, movieName, leadActor} = movieDetails
   const addMovieQuery = `insert into movie(director_id,movie_name,lead_actor)
   values(${directorId},'${movieName}','${leadActor}')`
-  const dbResponse = await db.run(addMovieQuery)
+  await db.run(addMovieQuery)
   response.send('Movie Successfully Added')
 })
 
@@ -49,26 +56,33 @@ app.get('/movies/:movieId/', async (request, response) => {
   SELECT 
     * 
   FROM 
-  
     movie
   WHERE
-    movie_id=${movieId};`
-  const singleMovieId = await db.get(getSingleMovieQuery)
-  response.send(singleMovieId)
+    movie_id = ${movieId};`
+  const singleMovie = await db.get(getSingleMovieQuery)
+  const ans = dbObj => {
+    return {
+      movieId: dbObj.movie_id,
+      directorId: dbObj.director_id,
+      movieName: dbObj.movie_name,
+      leadActor: dbObj.lead_actor,
+    }
+  }
+  const newSingleMovieId = ans(singleMovie)
+  response.send(newSingleMovieId)
 })
 
 //Updates the details of a movie in the movie table
 app.put('/movies/:movieId/', async (request, response) => {
   const {movieId} = request.params
-  const movieDetails = request.body
-  const {directorId, movieName, leadActor} = movieDetails
+  const {directorId, movieName, leadActor} = request.body
   const updateMovieQuery = `
     UPDATE
-      MOVIE
+      movie
     SET
-      director_id:${directorId},
-      movie_name:'${movieName}',
-      lead_actor:'${leadActor}',
+      director_id=${directorId},
+      movie_name='${movieName}',
+      lead_actor='${leadActor}'
     WHERE
       movie_id=${movieId}`
   await db.run(updateMovieQuery)
@@ -81,7 +95,7 @@ app.delete('/movies/:movieId/', async (request, response) => {
   const deleteMovie = `
   DELETE FROM 
     movie 
-  wHERE 
+  WHERE 
     movie_id = ${movieId}`
   const dbResponse = await db.run(deleteMovie)
   response.send('Movie Removed')
@@ -93,7 +107,13 @@ app.get('/directors/', async (request, response) => {
   ORDER BY 
     director_id`
   const directorArray = await db.all(getdirectorQuery)
-  response.send(directorArray)
+  const ans = dbObj => {
+    return {
+      directorId: dbObj.director_id,
+      directorName: dbObj.director_name,
+    }
+  }
+  response.send(directorArray.map(director => ans(director)))
 })
 
 //Returns a list of all movie names directed by a specific director
@@ -101,15 +121,13 @@ app.get('/directors/:directorId/movies/', async (request, response) => {
   const {directorId} = request.params
   const getdirectorQuery = `
   SELECT 
-    movieName 
+    movie_name
   FROM 
-    movie,director
-  ORDER BY 
-    director_id
+    movie
   WHERE 
-    director_id=${directorId}`
+    director_id = ${directorId}`
   const directorArray = await db.all(getdirectorQuery)
-  response.send(directorArray)
+  response.send(directorArray.map(movie => ({movieName: movie.movie_name})))
 })
 
 module.exports = app

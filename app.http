@@ -12,10 +12,10 @@ Content-Type: application/json
 }
 
 ###
-GET http://localhost:3000/movies/:movieId/
+GET http://localhost:3000/movies/48/
 
 ###
-PUT http://localhost:3000/movies/:movieId/
+PUT http://localhost:3000/movies/48/
 Content-Type: application/json
 
 {
@@ -31,4 +31,4 @@ DELETE http://localhost:3000/movies/movieId/
 GET http://localhost:3000/directors/
 
 ###
-GET http://localhost:3000/directors/:directorId/movies/
+GET http://localhost:3000/directors/5/movies/
